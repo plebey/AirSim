@@ -12,7 +12,7 @@ client.confirmConnection()
 
 # add new vehicle
 vehicle_name = "Drone2"
-pose = airsim.Pose(airsim.Vector3r(0, 0, 0), airsim.to_quaternion(0, 0, 0))
+pose = airsim.Pose(airsim.Vector3r(1, 1, 0), airsim.to_quaternion(0, 0, 0))
 
 client.simAddVehicle(vehicle_name, "simpleflight", pose)
 client.enableApiControl(True, vehicle_name)
