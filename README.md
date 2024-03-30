@@ -1,4 +1,17 @@
+Вопрос про выбор мультиротора / авто находится в ```AirSim/Unreal/Plugins/AirSim/Source/SimHUD/SimHUD.cpp```
+Файл отвечает за визуал при запуске Unreal.
+
+---
+Хранит в себе создание квадрокоптера: 
+```Plugins/AirSim/Source/AirLib/include/vehicles/multirotor/firmwares/simple_flight/SimpleFlightQuadXParams.hpp```
+
+в UAVSim показал измененный пример для генерации Hexacopter.
+
+---
+
 Разные типы дронов: релизуй папку с параметрами всех отдельных дронов и отдельный файл с используемыми в текущей симуляции.
+
+---
 
 Физический движок находится в ```AirLib/include/physics/FastPhysicsEngine.hpp```. Имеется возможность переключиться на внешний движок.
 
