@@ -1,3 +1,59 @@
+Разные типы дронов: релизуй папку с параметрами всех отдельных дронов и отдельный файл с используемыми в текущей симуляции.
+
+Физический движок находится в ```AirLib/include/physics/FastPhysicsEngine.hpp```. Имеется возможность переключиться на внешний движок.
+
+Здесь происходит вычисление: 
+- сумм и моментов, действующих на тело (```getBodyWrench()```).
+- силового вектора тяги в заданной скорости и ориентации (```getDragWrench()```).
+- следующего состояния объекта с учетом и без учета столкновения (```getNextKinematicsOnCollision()``` или ```getNextKinematicsNoCollision()```).
+- следующего **положения** объекта на основе текущих состояний, средних линейной и угловой скорости (```computeNextPose()```).
+- ```updatePhysics()``` - блокирует объект с помощью mutex, вызывает ```getNextKinematicsNoCollision()``` (необходимо для учета сил и моментов), затем проверяет, было ли столкновение и было ли оно обработано (если нет - ```getNextKinematicsOnCollision()```), после вызываются ```setWrench()``` и ```updateKinematics()``` - объект разблокируется.
+- Также устанавливаются параметры ветра (```setWind()```).
+
+**TODO:** понять, какой именно файл используется для конечного создания дрона. 
+
+---
+
+**TODO:** arducopter (автопилот?) и mavlink (протокол связи) - дополняющие друг друга вещи, а не аналоги друг друга. Почему у них отдельные папки в прошивках ```include/vehicles/multicopter/firmwares```?
+
+Внутри данных папок находятся ```ArduCopterApi``` и ```ArduCopterSoloApi``` соответственно. Как понимаю, последний заточен именно под 3DR дрон. Но почему последний в mavlink? 
+
+Почти все функции в ArduCopterApi not implemented (не реализованы). Не успели или не было необходимости? Готовы только ```connect()```, ```normalizeRotorControls()```, ```sendSensors()```(отправляет данные сенсоров в виде json) и ```recvRotorControl()```(получает данные управления роторами).
+
+**TODO:** почитать документацию, почему два вида реализации Arducopter
+---
+
+Всё создание дрона заключается в задании параметров "коробки" и детальных параметров роторов. По итогу выходит летающий бокс с заданным количеством роторов. 
+
+**TODO:** роторы представляют собой мини-коробки или же дрон+роторы имеют один единый хитбокс.
+
+Как понимаю, hexacopter "из коробки" можно использовать только с px4. Ибо с данной настройкой в settings.json '''client.getRotorStates()''' выводит инфу лишь о 4 роторах = квадрокоптер.
+
+Изменяю kSimModeTypeMultirotor, дабавляя еще свойство kSimModeTypeMultirotorHex для второго дрона. Сработало! Но параметры дронов одинаковые
+
+.
+
+.
+
+.
+
+Как понимаю, **API** здесь - RPC. Разобраться, как с ним управляться.
+
+**TODO:** Судя по всему, часть api расположена в include (что-то глобальное вроде настроек мира..?), а api мультиротора - в src. Хотя в include есть api и для дронов, а в src - глобальное. В чем разница?
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+
 ## AirSim announcement: This repository will be archived in the coming year 
 
 In 2017 Microsoft Research created AirSim as a simulation platform for AI research and experimentation. Over the span of five years, this research project has served its purpose—and gained a lot of ground—as a common way to share research code and test new ideas around aerial AI development and simulation. Additionally, time has yielded advancements in the way we apply technology to the real world, particularly through aerial mobility and autonomous systems. For example, drone delivery is no longer a sci-fi storyline—it’s a business reality, which means there are new needs to be met. We’ve learned a lot in the process, and we want to thank this community for your engagement along the way. 
