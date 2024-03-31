@@ -1,0 +1,13 @@
+{
+  "rotor_count" : 4,
+  "arm_length" : 0.2275,
+  "box_mass" : 0.78,
+  "motor_assembly_weight" : 0.055,
+  "body_box":
+  {
+    "x": 0.180,
+    "y": 0.11,
+    "z": 0.040
+  }
+
+}

@@ -384,6 +384,7 @@ namespace airlib
     public: //fields
         std::string simmode_name = "";
         std::string level_name = "";
+        std::string multirotors_folder;
 
         std::vector<SubwindowSetting> subwindow_settings;
         RecordingSetting recording_setting;
@@ -441,6 +442,7 @@ namespace airlib
 
             loadCoreSimModeSettings(settings_json, simmode_getter);
             loadLevelSettings(settings_json);
+            loadPathToMultirotorParams(settings_json);
             loadDefaultCameraSetting(settings_json, camera_defaults);
             loadCameraDirectorSetting(settings_json, camera_director, simmode_name);
             loadSubWindowsSettings(settings_json, subwindow_settings);
@@ -609,6 +611,13 @@ namespace airlib
         {
             level_name = settings_json.getString("Default Environment", "");
         }
+
+
+        void loadPathToMultirotorParams(const Settings& settings_json)
+        {
+            multirotors_folder = settings_json.getString("MultiRotorsFolder", "");
+        }
+
 
         void loadViewModeSettings(const Settings& settings_json)
         {
