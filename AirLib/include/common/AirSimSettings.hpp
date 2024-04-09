@@ -14,6 +14,11 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <filesystem>
+#include "Misc/FileHelper.h"
+#include "HAL/FileManager.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 namespace msr
 {
@@ -39,6 +44,7 @@ namespace airlib
         static constexpr char const* kVehicleInertialFrame = "VehicleInertialFrame";
         static constexpr char const* kSensorLocalFrame = "SensorLocalFrame";
 
+       
         static constexpr char const* kSimModeTypeMultirotor = "Multirotor";
         static constexpr char const* kSimModeTypeCar = "Car";
         static constexpr char const* kSimModeTypeComputerVision = "ComputerVision";
@@ -384,7 +390,7 @@ namespace airlib
     public: //fields
         std::string simmode_name = "";
         std::string level_name = "";
-        std::string multirotors_folder;
+        std::string multirotors_folder = "";
 
         std::vector<SubwindowSetting> subwindow_settings;
         RecordingSetting recording_setting;
@@ -950,6 +956,32 @@ namespace airlib
                     pawn_paths_child.getChild(key, child);
                     pawn_paths[key] = createPathPawn(child);
                 }
+            }
+
+            std::string custom_pawnpaths_path = settings_json.getString("PawnPathFolder", "");
+            if (!custom_pawnpaths_path.empty()) {
+                FString pr_plugins_dir = FPaths::ProjectPluginsDir();
+                FString rel_pawn_dir_path = TEXT("AirSim/Content");
+                FString params_file_path = FPaths::Combine(pr_plugins_dir, rel_pawn_dir_path);
+                params_file_path = FPaths::Combine(params_file_path, FString(custom_pawnpaths_path.c_str()));
+
+                IFileManager& FileManager = IFileManager::Get();
+
+                TArray<FString> found_files;
+                FString ext = TEXT("*.uasset");
+                FileManager.FindFiles(found_files, *params_file_path, *ext);
+
+                for (const FString& file_path : found_files) {
+
+                    FString file_name = FPaths::GetBaseFilename(file_path);
+                    FString pawn_path = FString::Printf(TEXT("Class'/AirSim/Blueprints/%s.%s_C'"), *file_name, *file_name);
+
+                    pawn_paths.emplace(std::string(TCHAR_TO_UTF8(*file_name)),
+                                       PawnPath(std::string(TCHAR_TO_UTF8(*pawn_path))));           
+                }
+                /* for (const auto& pair : pawn_paths) {
+                    UE_LOG(LogTemp, Warning, TEXT("pawn: key: %s Value: %s"), *FString(pair.first.c_str()), *FString(pair.second.pawn_bp.c_str()));
+                }*/                                   
             }
         }
 
