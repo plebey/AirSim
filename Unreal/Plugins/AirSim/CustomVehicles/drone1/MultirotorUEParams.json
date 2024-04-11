@@ -1,5 +1,6 @@
 {
   "VehicleType": "SimpleFlight",
+  "PawnName": "DefaultQuadrotor",
   "X": 10,
   "Y": 0,
   "Z": 0,

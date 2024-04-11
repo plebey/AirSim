@@ -965,15 +965,14 @@ namespace airlib
                             FString vehicle_ue_settings_path = FPaths::Combine(veh_directory_path, rel_mulitotorUE_dir_path);
                             std::string vehicle_ue_settings_path_str = std::string(TCHAR_TO_UTF8(*vehicle_ue_settings_path));
 
-                            UE_LOG(LogTemp, Warning, TEXT("vehicle ue settings: %s"), *vehicle_ue_settings_path); 
+                            // UE_LOG(LogTemp, Warning, TEXT("vehicle ue settings: %s"), *vehicle_ue_settings_path); 
 
                             Settings vehicle_settings;
                             vehicle_settings = vehicle_settings.loadJSonFileNonSingleton(vehicle_ue_settings_path_str);
 
                             std::string tmp_str = vehicle_settings.getString("PawnName", "");
                             
-                            //TODO: ОШИБКА invalid map<K, T> key  ИЗ-ЗА НАЛИЧИЯ PAWN_NAME в файлах
-                            //TODO: При наличии ТОЛЬКО папок - создает еще одну главную пешку
+                            //TODO: ОШИБКА invalid map<K, T> key  ИЗ-ЗА НАЛИЧИЯ PAWN_NAME в файлах ---- из-за неверного названия BP
                             vehicles[drone_dir_name] = createVehicleSetting(simmode_name, 
                                                                             vehicle_settings, 
                                                                             drone_dir_name, 
@@ -984,13 +983,7 @@ namespace airlib
                         }
                     }
                 }
-
-
-
             }
-
-
-
         }
 
         static void initializePawnPaths(std::map<std::string, PawnPath>& pawn_paths)
@@ -1004,6 +997,8 @@ namespace airlib
                                PawnPath("Class'/AirSim/Blueprints/BP_FlyingPawn.BP_FlyingPawn_C'"));
             pawn_paths.emplace("DefaultComputerVision",
                                PawnPath("Class'/AirSim/Blueprints/BP_ComputerVisionPawn.BP_ComputerVisionPawn_C'"));
+           // pawn_paths.emplace("Geoscan_BP_FlyingPawn_DEFAULT",
+            //                   PawnPath("Class'/AirSim/CustomPawns/BP_FlyingPawn.BP_FlyingPawn_C'"));
         }
 
         static void loadPawnPaths(const Settings& settings_json, std::map<std::string, PawnPath>& pawn_paths)
@@ -1038,14 +1033,21 @@ namespace airlib
                 for (const FString& file_path : found_files) {
 
                     FString file_name = FPaths::GetBaseFilename(file_path);
-                    FString pawn_path = FString::Printf(TEXT("Class'/AirSim/Blueprints/%s.%s_C'"), *file_name, *file_name);
+                    FString pawn_path = FString::Printf(TEXT("Class'/AirSim/%s/%s.%s_C'"), *FString(custom_pawnpaths_path.c_str()), *file_name, *file_name);
 
-                    pawn_paths.emplace(std::string(TCHAR_TO_UTF8(*file_name)),
-                                       PawnPath(std::string(TCHAR_TO_UTF8(*pawn_path))));           
-                }
-                /* for (const auto& pair : pawn_paths) {
-                    UE_LOG(LogTemp, Warning, TEXT("pawn: key: %s Value: %s"), *FString(pair.first.c_str()), *FString(pair.second.pawn_bp.c_str()));
-                }*/                                   
+
+                    auto path = PawnPath();
+                    path.pawn_bp = std::string(TCHAR_TO_UTF8(*pawn_path));
+
+
+                    pawn_paths[std::string(TCHAR_TO_UTF8(*file_name))] = path;
+
+                    UE_LOG(LogTemp, Warning, TEXT("pawn[n]: %s"), *FString(pawn_paths[std::string(TCHAR_TO_UTF8(*file_name))].pawn_bp.c_str())); 
+
+                    UE_LOG(LogTemp, Warning, TEXT("pawn name: %s"), *file_name); 
+
+                }                               
+
             }
         }
 
