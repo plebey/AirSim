@@ -1,8 +1,8 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef msr_airlib_settings_hpp
-#define msr_airlib_settings_hpp
+#ifndef msr_airlib_vehiclesettings_hpp
+#define msr_airlib_vehiclesettings_hpp
 
 #include "common_utils/Utils.hpp"
 
@@ -23,7 +23,7 @@ namespace msr
 namespace airlib
 {
 
-    class Settings
+    class VehicleSettings
     {
     private:
         std::string full_filepath_;
@@ -38,29 +38,9 @@ namespace airlib
         }
 
     public:
-        
-        Settings loadJSonFileNonSingleton(std::string full_filepath)
+        static VehicleSettings& singleton()
         {
-            std::lock_guard<std::mutex> guard(getFileAccessMutex());
-            Settings settings;
-            settings.full_filepath_ = full_filepath;
-
-            settings.load_success_ = false;
-
-            std::ifstream s;
-            common_utils::FileSystem::openTextFile(full_filepath, s);
-            if (!s.fail()) {
-                s >> settings.doc_;
-                settings.load_success_ = true;
-            }
-
-            return settings;
-        }
-        
-
-        static Settings& singleton()
-        {
-            static Settings instance;
+            static VehicleSettings instance;
             return instance;
         }
 
@@ -78,7 +58,7 @@ namespace airlib
             return common_utils::FileSystem::combine(path, fileName);
         }
 
-        static Settings& loadJSonString(const std::string& json_str)
+        static VehicleSettings& loadJSonString(const std::string& json_str)
         {
             singleton().full_filepath_ = "";
             singleton().load_success_ = false;
@@ -101,7 +81,7 @@ namespace airlib
             return ss.str();
         }
 
-        static Settings& loadJSonFile(std::string full_filepath)
+        static VehicleSettings& loadJSonFile(std::string full_filepath)
         {
             std::lock_guard<std::mutex> guard(getFileAccessMutex());
             singleton().full_filepath_ = full_filepath;
@@ -137,7 +117,7 @@ namespace airlib
             s << std::setw(2) << doc_ << std::endl;
         }
 
-        bool getChild(const std::string& name, Settings& child) const
+        bool getChild(const std::string& name, VehicleSettings& child) const
         {
             if (doc_.count(name) == 1 &&
                 (doc_[name].type() == nlohmann::detail::value_t::object ||
@@ -161,7 +141,7 @@ namespace airlib
             }
         }
 
-        bool getChild(size_t index, Settings& child) const
+        bool getChild(size_t index, VehicleSettings& child) const
         {
             if (doc_.size() > index &&
                 (doc_[index].type() == nlohmann::detail::value_t::object ||
@@ -261,7 +241,7 @@ namespace airlib
             return false;
         }
 
-        void setChild(const std::string& name, Settings& value)
+        void setChild(const std::string& name, VehicleSettings& value)
         {
             doc_[name] = value.doc_;
         }

@@ -3,6 +3,8 @@
 
 #ifndef airsim_core_AirSimSettings_hpp
 #define airsim_core_AirSimSettings_hpp
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING 1
+
 
 #include "CommonStructs.hpp"
 #include "ImageCaptureBase.hpp"
@@ -15,10 +17,12 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <filesystem>
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include <experimental/filesystem>
+#include <HAL/FileManagerGeneric.h>
+
+
 
 namespace msr
 {
@@ -269,6 +273,7 @@ namespace airlib
             //optional
             std::string default_vehicle_state;
             std::string pawn_path;
+            std::string vehicle_params_path;
             bool allow_api_always = true;
             bool auto_create = true;
             bool enable_collision_passthrough = false;
@@ -518,13 +523,14 @@ namespace airlib
                             settings_json.getFloat("Y", default_vec.y()),
                             settings_json.getFloat("Z", default_vec.z()));
         }
+        
         static Rotation createRotationSetting(const Settings& settings_json, const Rotation& default_rot)
         {
             return Rotation(settings_json.getFloat("Yaw", default_rot.yaw),
                             settings_json.getFloat("Pitch", default_rot.pitch),
                             settings_json.getFloat("Roll", default_rot.roll));
         }
-
+        
     private:
         void checkSettingsVersion(const Settings& settings_json)
         {
@@ -821,7 +827,7 @@ namespace airlib
         static std::unique_ptr<VehicleSetting> createVehicleSetting(const std::string& simmode_name, const Settings& settings_json,
                                                                     const std::string vehicle_name,
                                                                     std::map<std::string, std::shared_ptr<SensorSetting>>& sensor_defaults,
-                                                                    const CameraSetting& camera_defaults)
+                                                                    const CameraSetting& camera_defaults, const std::string vehicle_params_path = "")
         {
             auto vehicle_type = Utils::toLower(settings_json.getString("VehicleType", ""));
 
@@ -844,6 +850,10 @@ namespace airlib
 
             //optional settings_json
             vehicle_setting->pawn_path = settings_json.getString("PawnPath", "");
+            if (vehicle_setting->pawn_path.empty())
+            {
+                vehicle_setting->pawn_path = settings_json.getString("PawnName", "");
+            }
             vehicle_setting->default_vehicle_state = settings_json.getString("DefaultVehicleState", "");
             vehicle_setting->allow_api_always = settings_json.getBool("AllowAPIAlways",
                                                                       vehicle_setting->allow_api_always);
@@ -857,6 +867,7 @@ namespace airlib
                                                                        vehicle_setting->enable_collisions);
             vehicle_setting->is_fpv_vehicle = settings_json.getBool("IsFpvVehicle",
                                                                     vehicle_setting->is_fpv_vehicle);
+            vehicle_setting->vehicle_params_path = vehicle_params_path;
 
             loadRCSetting(simmode_name, settings_json, vehicle_setting->rc);
 
@@ -905,12 +916,20 @@ namespace airlib
             }
         }
 
+
         static void loadVehicleSettings(const std::string& simmode_name, const Settings& settings_json,
                                         std::map<std::string, std::unique_ptr<VehicleSetting>>& vehicles,
                                         std::map<std::string, std::shared_ptr<SensorSetting>>& sensor_defaults,
                                         const CameraSetting& camera_defaults)
         {
             createDefaultVehicle(simmode_name, vehicles, sensor_defaults);
+
+            // remove default if we have dir's
+            std::string custom_vehicles_path = settings_json.getString("ExternalVehiclesFolder", "");
+            if (!custom_vehicles_path.empty()) {
+                vehicles.clear();
+            }
+
 
             msr::airlib::Settings vehicles_child;
             if (settings_json.getChild("Vehicles", vehicles_child)) {
@@ -925,8 +944,53 @@ namespace airlib
                     msr::airlib::Settings child;
                     vehicles_child.getChild(key, child);
                     vehicles[key] = createVehicleSetting(simmode_name, child, key, sensor_defaults, camera_defaults);
-                }
+                }               
             }
+
+            // get vehicles from outer files
+            if (!custom_vehicles_path.empty()) {
+                FString pr_plugins_dir = FPaths::ProjectPluginsDir();
+                FString rel_airsim_dir_path = TEXT("AirSim");
+                FString params_dir_path = FPaths::Combine(pr_plugins_dir, rel_airsim_dir_path);
+                params_dir_path = FPaths::Combine(params_dir_path, FString(custom_vehicles_path.c_str()));
+                std::string params_dir_path_str = std::string(TCHAR_TO_UTF8(*params_dir_path));
+
+                if (FPaths::DirectoryExists(params_dir_path)) {
+                     for (const auto& entry : std::experimental::filesystem::directory_iterator(params_dir_path_str)) {
+                        if (std::experimental::filesystem::is_directory(entry)) {
+                            std::string drone_dir_name = entry.path().filename().u8string().c_str();
+                            FString veh_directory_path = FString(UTF8_TO_TCHAR(entry.path().u8string().c_str()));
+                            veh_directory_path.ReplaceInline(TEXT("\\"), TEXT("/"));
+                            FString rel_mulitotorUE_dir_path = TEXT("MultirotorUEParams.json");
+                            FString vehicle_ue_settings_path = FPaths::Combine(veh_directory_path, rel_mulitotorUE_dir_path);
+                            std::string vehicle_ue_settings_path_str = std::string(TCHAR_TO_UTF8(*vehicle_ue_settings_path));
+
+                            UE_LOG(LogTemp, Warning, TEXT("vehicle ue settings: %s"), *vehicle_ue_settings_path); 
+
+                            Settings vehicle_settings;
+                            vehicle_settings = vehicle_settings.loadJSonFileNonSingleton(vehicle_ue_settings_path_str);
+
+                            std::string tmp_str = vehicle_settings.getString("PawnName", "");
+                            
+                            //TODO: ОШИБКА invalid map<K, T> key  ИЗ-ЗА НАЛИЧИЯ PAWN_NAME в файлах
+                            //TODO: При наличии ТОЛЬКО папок - создает еще одну главную пешку
+                            vehicles[drone_dir_name] = createVehicleSetting(simmode_name, 
+                                                                            vehicle_settings, 
+                                                                            drone_dir_name, 
+                                                                            sensor_defaults, 
+                                                                            camera_defaults,
+                                                                            std::string(TCHAR_TO_UTF8(*veh_directory_path)));
+
+                        }
+                    }
+                }
+
+
+
+            }
+
+
+
         }
 
         static void initializePawnPaths(std::map<std::string, PawnPath>& pawn_paths)
@@ -1358,6 +1422,7 @@ namespace airlib
             sensor_setting->settings = settings_json;
         }
 
+
         // creates and intializes sensor settings from json
         static void loadSensorSettings(const Settings& settings_json, const std::string& collectionName,
                                        std::map<std::string, std::shared_ptr<SensorSetting>>& sensors,
@@ -1395,6 +1460,7 @@ namespace airlib
                     sensors[p.first] = p.second;
             }
         }
+
 
         // creates default sensor list when none specified in json
         static void createDefaultSensorSettings(const std::string& simmode_name,

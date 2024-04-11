@@ -70,7 +70,7 @@ namespace airlib
         void getParamsList()
         {
             FString pr_plugins_dir = FPaths::ProjectPluginsDir();
-            FString rel_multirotor_params_path = TEXT("AirSim/multirotors/first/RotorParams.json"); 
+            FString rel_multirotor_params_path = TEXT("AirSim/CustomVehicles/drone1/RotorParams.json"); 
             FString params_file_path = FPaths::Combine(pr_plugins_dir, rel_multirotor_params_path);
             std::string params_file_path_str(TCHAR_TO_UTF8(*params_file_path));
             std::ifstream file(params_file_path_str);
