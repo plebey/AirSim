@@ -67,15 +67,16 @@ namespace airlib
         //= 0.055562f; //computed from above formula
 
 
-        void getParamsList()
+        void getParamsList(const std::string& params_path = "")
         {
-            FString pr_plugins_dir = FPaths::ProjectPluginsDir();
-            FString rel_multirotor_params_path = TEXT("AirSim/CustomVehicles/drone1/RotorParams.json"); 
-            FString params_file_path = FPaths::Combine(pr_plugins_dir, rel_multirotor_params_path);
+            //FString pr_plugins_dir = FPaths::ProjectPluginsDir();
+            FString rel_multirotor_params_path = TEXT("RotorParams.json"); 
+            FString params_file_path = FPaths::Combine(FString(params_path.c_str()), rel_multirotor_params_path);
+            //UE_LOG(LogTemp, Warning, TEXT("rotor rapams path: %s"), *params_file_path);
             std::string params_file_path_str(TCHAR_TO_UTF8(*params_file_path));
             std::ifstream file(params_file_path_str);
             if (!file.is_open()) {
-                std::cerr << "Unable to open a file!" << std::endl;
+                UE_LOG(LogTemp, Warning, TEXT("Can't open file: %s"), *params_file_path);
             }
 
              /*Read JSON from file*/
@@ -92,7 +93,7 @@ namespace airlib
             control_signal_filter_tc = jsonParams["control_signal_filter_tc"];
             max_thrust = jsonParams["max_thrust"];
             max_torque = jsonParams["max_torque"];
-            rotor_z = jsonParams["rotor_z"] / 100;
+            rotor_z = jsonParams["rotor_z"];
             //UAirBlueprintLib::LogMessageString(std::to_string(params.C_T), "rotor params", LogDebugLevel::Failure);
 
         }

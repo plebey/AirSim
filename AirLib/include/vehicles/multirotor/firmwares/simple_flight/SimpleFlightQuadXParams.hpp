@@ -39,7 +39,7 @@ namespace airlib
             // Use connection_info_.model for the model name, see Px4MultiRotorParams for example
 
             // Only Generic for now
-            setupFrameGenericMultirotor(params);
+            setupFrameGenericMultirotor(params, vehicle_setting_->vehicle_params_path);
         }
 
         virtual const SensorFactory* getSensorFactory() const override

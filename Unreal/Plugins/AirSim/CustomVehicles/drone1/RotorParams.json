@@ -8,5 +8,5 @@
   "control_signal_filter_tc" : 0.005,
   "max_thrust" : 4.179446268,
   "max_torque" : 0.055562,
-  "rotor_z": 2.5
+  "rotor_z": 0.025
 }

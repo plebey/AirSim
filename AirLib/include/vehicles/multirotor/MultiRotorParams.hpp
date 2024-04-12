@@ -57,15 +57,16 @@ namespace airlib
             real_T friction = 0.5f;
             RotorParams rotor_params;
 
-            void getMultirotorParams()
+            void getMultirotorParams(const std::string& params_path = "")
             {
-                FString pr_plugins_dir = FPaths::ProjectPluginsDir();
-                FString rel_multirotor_params_path = TEXT("AirSim/CustomVehicles/drone1/MultiRotorParams.json");
-                FString params_file_path = FPaths::Combine(pr_plugins_dir, rel_multirotor_params_path);
+                //FString pr_plugins_dir = FPaths::ProjectPluginsDir();
+                FString rel_multirotor_params_path = TEXT("MultiRotorParams.json");
+                FString params_file_path = FPaths::Combine(FString(params_path.c_str()), rel_multirotor_params_path);
+                //UE_LOG(LogTemp, Warning, TEXT("multirotor rapams path: %s"), *params_file_path);
                 std::string params_file_path_str(TCHAR_TO_UTF8(*params_file_path));
                 std::ifstream file(params_file_path_str);
                 if (!file.is_open()) {
-                    std::cerr << "Unable to open a file!" << std::endl;
+                    UE_LOG(LogTemp, Warning, TEXT("Can't open file: %s"), *params_file_path);
                 }
 
                 /*Read JSON from file*/
@@ -347,16 +348,15 @@ namespace airlib
 
 
         // Use for octo / hex / quad rotors
-        void setupFrameGenericMultirotor(Params& params)
+        void setupFrameGenericMultirotor(Params& params, const std::string& params_path)
         {
-            params.getMultirotorParams();
-            std::vector<real_T> arm_lengths(params.rotor_count, params.arm_length);
-            
+            params.getMultirotorParams(params_path);
             // get list of params from file
-            params.rotor_params.getParamsList();
+            params.rotor_params.getParamsList(params_path);
             // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust
             // given new thrust coefficients, motor max_rpm and propeller diameter.
             params.rotor_params.calculateMaxThrust();
+            std::vector<real_T> arm_lengths(params.rotor_count, params.arm_length);
 
             //compute rotor poses
             if (params.rotor_count == 4)

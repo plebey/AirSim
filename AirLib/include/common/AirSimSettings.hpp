@@ -972,7 +972,7 @@ namespace airlib
 
                             std::string tmp_str = vehicle_settings.getString("PawnName", "");
                             
-                            //TODO: ОШИБКА invalid map<K, T> key  ИЗ-ЗА НАЛИЧИЯ PAWN_NAME в файлах ---- из-за неверного названия BP
+                            //TODO: ОШИБКА invalid map<K, T> key ---- из-за неверного названия BP
                             vehicles[drone_dir_name] = createVehicleSetting(simmode_name, 
                                                                             vehicle_settings, 
                                                                             drone_dir_name, 
