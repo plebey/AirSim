@@ -1,10 +1,11 @@
 {
   "VehicleType": "SimpleFlight",
-  "PawnName": "BP_FlyingPawn",
-  "X": 10,
+  "PawnName": "BP_Geoscan401",
+  "X": 0,
   "Y": 0,
   "Z": 0,
   "Pitch": 0,
   "Roll": 0,
-  "Yaw": 120
+  "Yaw": 0
 }
+
