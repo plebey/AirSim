@@ -25,7 +25,10 @@ public:
 
         for (int motor_index = 0; motor_index < kMotorCount; ++motor_index) {
             motor_outputs[motor_index] =
-                controls.throttle() * mixerQuadX[motor_index].throttle + controls.pitch() * mixerQuadX[motor_index].pitch + controls.roll() * mixerQuadX[motor_index].roll + controls.yaw() * mixerQuadX[motor_index].yaw;
+                controls.throttle() * mixerQuadX[motor_index].throttle + 
+                controls.roll() * mixerQuadX[motor_index].roll + 
+                controls.pitch() * mixerQuadX[motor_index].pitch + 
+                controls.yaw() * mixerQuadX[motor_index].yaw;
         }
 
         float min_motor = *std::min_element(motor_outputs.begin(), motor_outputs.begin() + kMotorCount);

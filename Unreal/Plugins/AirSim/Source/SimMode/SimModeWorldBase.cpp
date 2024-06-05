@@ -55,6 +55,7 @@ long long ASimModeWorldBase::getPhysicsLoopPeriod() const //nanoseconds
 }
 void ASimModeWorldBase::setPhysicsLoopPeriod(long long period)
 {
+    UE_LOG(LogTemp, Warning, TEXT("period changed!!!: %llu"), period); 
     physics_loop_period_ = period;
 }
 
@@ -145,6 +146,7 @@ void ASimModeWorldBase::updateDebugReport(msr::airlib::StateReporterWrapper& deb
 void ASimModeWorldBase::Tick(float DeltaSeconds)
 {
     { //keep this lock as short as possible
+        //UE_LOG(LogTemp, Warning, TEXT("SimModeWorldBase::Tick")); 
         physics_world_->lock();
 
         physics_world_->enableStateReport(EnableReport);

@@ -43,6 +43,7 @@ void MultirotorPawnSimApi::initialize()
 
 void MultirotorPawnSimApi::pawnTick(float dt)
 {
+    //UE_LOG(LogTemp, Warning, TEXT("MultirotorPawnSimApi::pawnTick()")); 
     unused(dt);
     //calls to update* are handled by physics engine and in SimModeWorldBase
 }

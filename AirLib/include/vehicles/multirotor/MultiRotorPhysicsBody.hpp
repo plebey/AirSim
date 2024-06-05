@@ -84,7 +84,9 @@ namespace airlib
 
         void updateSensorsAndController()
         {
+            //UE_LOG(LogTemp, Warning, TEXT("Angular acceleration before: %f"), getKinematics().accelerations.angular.x()); 
             updateSensors(*params_, getKinematics(), getEnvironment());
+            //UE_LOG(LogTemp, Warning, TEXT("Angular acceleration after: %f"), getKinematics().accelerations.angular.x()); 
 
             //update controller which will update actuator control signal
             vehicle_api_->update();
@@ -172,6 +174,7 @@ namespace airlib
 
         void updateSensors(MultiRotorParams& params, const Kinematics::State& state, const Environment& environment)
         {
+            //UE_LOG(LogTemp, Warning, TEXT("UPDATE_SENSORS")); 
             unused(state);
             unused(environment);
             params.getSensors().update();

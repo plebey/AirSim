@@ -59,7 +59,6 @@ public:
     virtual void update() override
     {
         IAxisController::update();
-
         const Axis4r& goal_position_world = goal_->getGoalValue();
         pid_->setGoal(goal_position_world[axis_]);
         const Axis4r& measured_position_world = Axis4r::xyzToAxis4(

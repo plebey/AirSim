@@ -42,10 +42,12 @@ void ASimModeWorldMultiRotor::setupClockSpeed()
     std::string clock_type = getSettings().clock_type;
 
     if (clock_type == "ScalableClock") {
+        UE_LOG(LogTemp, Warning, TEXT("SCALABLE CLOCK")); 
         //scalable clock returns interval same as wall clock but multiplied by a scale factor
         ClockFactory::get(std::make_shared<msr::airlib::ScalableClock>(clock_speed == 1 ? 1 : 1 / clock_speed));
     }
     else if (clock_type == "SteppableClock") {
+        UE_LOG(LogTemp, Warning, TEXT("STEPPABLE CLOCK, clock speed: %f"), clock_speed); 
         //steppable clock returns interval that is a constant number irrespective of wall clock
         //we can either multiply this fixed interval by scale factor to speed up/down the clock
         //but that would cause vehicles like quadrotors to become unstable

@@ -82,7 +82,7 @@ namespace airlib
                 body_box.z() = jsonParams["body_box"]["z"];
 
                 //set up mass
-                //this has to be between max_thrust*rotor_count/10 (1.6kg using default parameters in RotorParams.hpp) and (idle throttle percentage)*max_thrust*rotor_count/10 (0.8kg using default parameters and SimpleFlight)
+                //this has to be between max_thrust*rotor_count/10 and (idle throttle percentage)*max_thrust*rotor_count/10
                 //any value above the maximum would result in the motors not being able to lift the body even at max thrust,
                 //and any value below the minimum would cause the drone to fly upwards on idling throttle (50% of the max throttle if using SimpleFlight)
                 //Note that the default idle throttle percentage is 50% if you are using SimpleFlight

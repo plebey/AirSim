@@ -34,13 +34,15 @@ namespace airlib
         {
             readSettings(*vehicle_setting);
 
+            sensors_ = &getSensors();
+
             //TODO: set below properly for better high speed safety
             safety_params_.vel_to_breaking_dist = safety_params_.min_breaking_dist = 0;
 
             //create sim implementations of board and commlink
             board_.reset(new AirSimSimpleFlightBoard(&params_));
             comm_link_.reset(new AirSimSimpleFlightCommLink());
-            estimator_.reset(new AirSimSimpleFlightEstimator());
+            estimator_.reset(new AirSimSimpleFlightEstimator(sensors_));
 
             //create firmware
             firmware_.reset(new simple_flight::Firmware(&params_, board_.get(), comm_link_.get(), estimator_.get()));
@@ -306,7 +308,10 @@ namespace airlib
             //Utils::log(Utils::stringf("commandVelocityZ %f, %f, %f, %f", vx, vy, z, yaw_mode.yaw_or_rate));
 
             typedef simple_flight::GoalModeType GoalModeType;
-            simple_flight::GoalMode mode(GoalModeType::VelocityWorld, GoalModeType::VelocityWorld, yaw_mode.is_rate ? GoalModeType::AngleRate : GoalModeType::AngleLevel, GoalModeType::PositionWorld);
+            simple_flight::GoalMode mode(GoalModeType::VelocityWorld, 
+                                        GoalModeType::VelocityWorld, 
+                                        yaw_mode.is_rate ? GoalModeType::AngleRate : GoalModeType::AngleLevel, 
+                                        GoalModeType::PositionWorld);
 
             simple_flight::Axis4r goal(vy, vx, Utils::degreesToRadians(yaw_mode.yaw_or_rate), z);
 
@@ -416,6 +421,8 @@ namespace airlib
 
         int remote_control_id_ = 0;
         simple_flight::Params params_;
+
+        const SensorCollection* sensors_;
 
         unique_ptr<AirSimSimpleFlightBoard> board_;
         unique_ptr<AirSimSimpleFlightCommLink> comm_link_;

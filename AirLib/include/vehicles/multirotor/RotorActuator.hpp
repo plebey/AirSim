@@ -112,7 +112,7 @@ namespace airlib
             Vector3r normal = getNormal();
             //forces and torques are proportional to air density: http://physics.stackexchange.com/a/32013/14061
             wrench.force = normal * output_.thrust * air_density_ratio_;
-            wrench.torque = normal * output_.torque_scaler * air_density_ratio_; //TODO: try using filtered control here
+            wrench.torque = normal * output_.torque_scaler * air_density_ratio_; 
         }
 
     private: //methods
