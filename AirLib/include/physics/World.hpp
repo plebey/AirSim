@@ -91,6 +91,7 @@ namespace airlib
         //async updater thread
         void startAsyncUpdator(uint64_t period)
         {
+            UE_LOG(LogTemp, Warning, TEXT("period: %llu"), period); 
             //TODO: probably we shouldn't be passing around fixed period
             executor_.initialize(std::bind(&World::worldUpdatorAsync, this, std::placeholders::_1), period);
             executor_.start();

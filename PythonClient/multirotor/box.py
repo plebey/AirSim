@@ -6,11 +6,26 @@ import time
 
 client = airsim.MultirotorClient()
 client.confirmConnection()
-client.enableApiControl(True)
-client.armDisarm(True)
-client.takeoffAsync().join()
+client.enableApiControl(True, "drone1")
+client.enableApiControl(True, "drone2")
+client.armDisarm(True, "drone1")
+client.armDisarm(True, "drone2")
 
 print("Flying a small square box using moveByVelocityZ")
+print(client.listVehicles())
+
+
+f1 = client.takeoffAsync(vehicle_name="drone1")
+f2 = client.takeoffAsync(vehicle_name="drone2")
+f1.join()
+f2.join()
+
+
+
+f1 = client.moveToPositionAsync(-5, 5, -10, 5, vehicle_name="drone1")
+f2 = client.moveToPositionAsync(5, -5, -10, 5, vehicle_name="drone2")
+f1.join()
+f2.join()
 
 # AirSim uses NED coordinates so negative axis is up.
 # z of -7 is 7 meters above the original launch point.
@@ -27,7 +42,12 @@ delay = duration * speed
 vx = speed
 vy = 0
 print("moving by velocity vx=" + str(vx) + ", vy=" + str(vy) + ", yaw=90")
-client.moveByVelocityZAsync(vx,vy,z,duration, airsim.DrivetrainType.MaxDegreeOfFreedom, airsim.YawMode(False, 90)).join()
+client.moveByVelocityZAsync(vx,
+                            vy,
+                            z,
+                            duration,
+                            airsim.DrivetrainType.MaxDegreeOfFreedom,
+                            airsim.YawMode(False, 90)).join()
 time.sleep(delay)
 vx = 0
 vy = speed

@@ -25,9 +25,11 @@ public:
         switch (params->controller_type) {
         case Params::ControllerType::Cascade:
             controller_ = std::unique_ptr<CascadeController>(new CascadeController(params, board, comm_link));
+            UE_LOG(LogTemp, Warning, TEXT("CASCADE CONTROLLER ACTIVATED")); 
             break;
         case Params::ControllerType::Adaptive:
             controller_ = std::unique_ptr<AdaptiveController>(new AdaptiveController());
+            UE_LOG(LogTemp, Warning, TEXT("ADAPTIVE CONTROLLER ACTIVATED")); 
             break;
         default:
             throw std::invalid_argument("Cannot recognize controller specified by params->controller_type");

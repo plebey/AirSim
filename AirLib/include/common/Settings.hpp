@@ -38,6 +38,26 @@ namespace airlib
         }
 
     public:
+        
+        Settings loadJSonFileNonSingleton(std::string full_filepath)
+        {
+            std::lock_guard<std::mutex> guard(getFileAccessMutex());
+            Settings settings;
+            settings.full_filepath_ = full_filepath;
+
+            settings.load_success_ = false;
+
+            std::ifstream s;
+            common_utils::FileSystem::openTextFile(full_filepath, s);
+            if (!s.fail()) {
+                s >> settings.doc_;
+                settings.load_success_ = true;
+            }
+
+            return settings;
+        }
+        
+
         static Settings& singleton()
         {
             static Settings instance;

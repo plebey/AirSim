@@ -60,8 +60,12 @@ namespace airlib
             real_T motor_assembly_weight = 0.055f;
             real_T box_mass = params.mass - params.rotor_count * motor_assembly_weight;
 
+
+
+            params.rotor_params.getParamsList();
             // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust
             // given new thrust coefficients, motor max_rpm and propeller diameter.
+            
             params.rotor_params.calculateMaxThrust();
 
             // Dimensions of core body box or abdomen, in meters (not including arms).  KM measures the Solo at 9.5" x 4.5" x 3"

@@ -39,12 +39,15 @@ namespace airlib
             /*********** required parameters ***********/
             uint rotor_count;
             vector<RotorPose> rotor_poses;
+            real_T box_mass;
             real_T mass;
+
             Matrix3x3r inertia;
             Vector3r body_box;
-
+            real_T arm_length;
+            real_T motor_assembly_weight;
             /*********** optional parameters with defaults ***********/
-            real_T linear_drag_coefficient = 1.3f / 4.0f;
+            real_T linear_drag_coefficient = 1.3f;
             //sample value 1.3 from http://klsin.bpmsg.com/how-fast-can-a-quadcopter-fly/, but divided by 4 to account
             // for nice streamlined frame design and allow higher top speed which is more fun.
             //angular coefficient is usually 10X smaller than linear, however we should replace this with exact number
@@ -53,6 +56,39 @@ namespace airlib
             real_T restitution = 0.55f; // value of 1 would result in perfectly elastic collisions, 0 would be completely inelastic.
             real_T friction = 0.5f;
             RotorParams rotor_params;
+
+            void getMultirotorParams(const std::string& params_path = "")
+            {
+                //FString pr_plugins_dir = FPaths::ProjectPluginsDir();
+                FString rel_multirotor_params_path = TEXT("MultiRotorParams.json");
+                FString params_file_path = FPaths::Combine(FString(params_path.c_str()), rel_multirotor_params_path);
+                //UE_LOG(LogTemp, Warning, TEXT("multirotor rapams path: %s"), *params_file_path);
+                std::string params_file_path_str(TCHAR_TO_UTF8(*params_file_path));
+                std::ifstream file(params_file_path_str);
+                if (!file.is_open()) {
+                    UE_LOG(LogTemp, Warning, TEXT("Can't open file: %s"), *params_file_path);
+                }
+
+                /*Read JSON from file*/
+                nlohmann::json jsonParams;
+                file >> jsonParams;
+
+                rotor_count = jsonParams["rotor_count"];
+                arm_length = jsonParams["arm_length"];
+                box_mass = jsonParams["box_mass"];
+                motor_assembly_weight = jsonParams["motor_assembly_weight"];
+                body_box.x() = jsonParams["body_box"]["x"];
+                body_box.y() = jsonParams["body_box"]["y"];
+                body_box.z() = jsonParams["body_box"]["z"];
+
+                //set up mass
+                //this has to be between max_thrust*rotor_count/10 and (idle throttle percentage)*max_thrust*rotor_count/10
+                //any value above the maximum would result in the motors not being able to lift the body even at max thrust,
+                //and any value below the minimum would cause the drone to fly upwards on idling throttle (50% of the max throttle if using SimpleFlight)
+                //Note that the default idle throttle percentage is 50% if you are using SimpleFlight
+                mass = box_mass + rotor_count * motor_assembly_weight;
+
+            }
         };
 
     protected: //must override by derived class
@@ -308,6 +344,47 @@ namespace airlib
         // Some Frame types which can be used by different firmwares
         // Specific frame configurations, modifications can be done in the Firmware Params
 
+
+
+
+        // Use for octo / hex / quad rotors
+        void setupFrameGenericMultirotor(Params& params, const std::string& params_path)
+        {
+            params.getMultirotorParams(params_path);
+            // get list of params from file
+            params.rotor_params.getParamsList(params_path);
+            // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust
+            // given new thrust coefficients, motor max_rpm and propeller diameter.
+            params.rotor_params.calculateMaxThrust();
+            std::vector<real_T> arm_lengths(params.rotor_count, params.arm_length);
+
+            //compute rotor poses
+            if (params.rotor_count == 4)
+            {
+                initializeRotorQuadX(params.rotor_poses, params.rotor_count, arm_lengths.data(), params.rotor_params.rotor_z);
+            }
+            else if (params.rotor_count == 6)
+            {
+                initializeRotorHexX(params.rotor_poses, params.rotor_count, arm_lengths.data(), params.rotor_params.rotor_z);
+            }
+            else if (params.rotor_count == 8)
+            {
+                initializeRotorOctoX(params.rotor_poses, params.rotor_count, arm_lengths.data(), params.rotor_params.rotor_z);
+            }
+            else
+            {
+                throw std::invalid_argument("No implementation of a multirotor with a given number of rotors.");
+            }
+
+
+            //compute inertia matrix
+            computeInertiaMatrix(params.inertia, params.body_box, params.rotor_poses, params.box_mass, params.motor_assembly_weight);
+            
+
+        }
+
+
+
         void setupFrameGenericQuad(Params& params)
         {
             //set up arm lengths
@@ -325,6 +402,8 @@ namespace airlib
             real_T motor_assembly_weight = 0.055f; //weight for MT2212 motor for F450 frame
             real_T box_mass = params.mass - params.rotor_count * motor_assembly_weight;
 
+            // Mish: get list of params from file
+            params.rotor_params.getParamsList();
             // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust
             // given new thrust coefficients, motor max_rpm and propeller diameter.
             params.rotor_params.calculateMaxThrust();
@@ -358,6 +437,8 @@ namespace airlib
             real_T motor_assembly_weight = 0.055f; //weight for MT2212 motor for F450 frame
             real_T box_mass = params.mass - params.rotor_count * motor_assembly_weight;
 
+            // Mish: get list of params from file
+            params.rotor_params.getParamsList();
             // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust
             // given new thrust coefficients, motor max_rpm and propeller diameter.
             params.rotor_params.calculateMaxThrust();
@@ -391,6 +472,8 @@ namespace airlib
             real_T motor_assembly_weight = 0.055f; //weight for MT2212 motor for F450 frame  0.148
             real_T box_mass = params.mass - params.rotor_count * motor_assembly_weight;
 
+            // Mish: get list of params from file
+            params.rotor_params.getParamsList();
             // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust
             // given new thrust coefficients, motor max_rpm and propeller diameter.
             params.rotor_params.calculateMaxThrust();
@@ -407,6 +490,7 @@ namespace airlib
             //compute inertia matrix
             computeInertiaMatrix(params.inertia, params.body_box, params.rotor_poses, box_mass, motor_assembly_weight);
         }
+
 
         void setupFrameFlamewheel(Params& params)
         {

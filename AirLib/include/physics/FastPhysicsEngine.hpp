@@ -181,7 +181,7 @@ namespace airlib
 
             /*
             GafferOnGames - Collision response with columb friction
-            http://gafferongames.com/virtual-go/collision-response-and-coulomb-friction/
+            https://gafferongames.com/post/collision_response_and_coulomb_friction/
             Assuming collision is with static fixed body,
             impulse magnitude = j = -(1 + R)V.N / (1/m + (I'(r X N) X r).N)
             Physics Part 3, Collision Response, Chris Hecker, eq 4(a)

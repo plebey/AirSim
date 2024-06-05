@@ -3,6 +3,8 @@
 
 #ifndef airsim_core_AirSimSettings_hpp
 #define airsim_core_AirSimSettings_hpp
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING 1
+
 
 #include "CommonStructs.hpp"
 #include "ImageCaptureBase.hpp"
@@ -14,6 +16,13 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <iostream>
+#include "Misc/FileHelper.h"
+#include "HAL/FileManager.h"
+#include <experimental/filesystem>
+#include <HAL/FileManagerGeneric.h>
+
+
 
 namespace msr
 {
@@ -39,6 +48,7 @@ namespace airlib
         static constexpr char const* kVehicleInertialFrame = "VehicleInertialFrame";
         static constexpr char const* kSensorLocalFrame = "SensorLocalFrame";
 
+       
         static constexpr char const* kSimModeTypeMultirotor = "Multirotor";
         static constexpr char const* kSimModeTypeCar = "Car";
         static constexpr char const* kSimModeTypeComputerVision = "ComputerVision";
@@ -263,6 +273,7 @@ namespace airlib
             //optional
             std::string default_vehicle_state;
             std::string pawn_path;
+            std::string vehicle_params_path;
             bool allow_api_always = true;
             bool auto_create = true;
             bool enable_collision_passthrough = false;
@@ -384,6 +395,7 @@ namespace airlib
     public: //fields
         std::string simmode_name = "";
         std::string level_name = "";
+        std::string multirotors_folder = "";
 
         std::vector<SubwindowSetting> subwindow_settings;
         RecordingSetting recording_setting;
@@ -441,6 +453,7 @@ namespace airlib
 
             loadCoreSimModeSettings(settings_json, simmode_getter);
             loadLevelSettings(settings_json);
+            loadPathToMultirotorParams(settings_json);
             loadDefaultCameraSetting(settings_json, camera_defaults);
             loadCameraDirectorSetting(settings_json, camera_director, simmode_name);
             loadSubWindowsSettings(settings_json, subwindow_settings);
@@ -510,13 +523,14 @@ namespace airlib
                             settings_json.getFloat("Y", default_vec.y()),
                             settings_json.getFloat("Z", default_vec.z()));
         }
+        
         static Rotation createRotationSetting(const Settings& settings_json, const Rotation& default_rot)
         {
             return Rotation(settings_json.getFloat("Yaw", default_rot.yaw),
                             settings_json.getFloat("Pitch", default_rot.pitch),
                             settings_json.getFloat("Roll", default_rot.roll));
         }
-
+        
     private:
         void checkSettingsVersion(const Settings& settings_json)
         {
@@ -609,6 +623,13 @@ namespace airlib
         {
             level_name = settings_json.getString("Default Environment", "");
         }
+
+
+        void loadPathToMultirotorParams(const Settings& settings_json)
+        {
+            multirotors_folder = settings_json.getString("MultiRotorsFolder", "");
+        }
+
 
         void loadViewModeSettings(const Settings& settings_json)
         {
@@ -806,7 +827,7 @@ namespace airlib
         static std::unique_ptr<VehicleSetting> createVehicleSetting(const std::string& simmode_name, const Settings& settings_json,
                                                                     const std::string vehicle_name,
                                                                     std::map<std::string, std::shared_ptr<SensorSetting>>& sensor_defaults,
-                                                                    const CameraSetting& camera_defaults)
+                                                                    const CameraSetting& camera_defaults, const std::string vehicle_params_path = "")
         {
             auto vehicle_type = Utils::toLower(settings_json.getString("VehicleType", ""));
 
@@ -829,6 +850,10 @@ namespace airlib
 
             //optional settings_json
             vehicle_setting->pawn_path = settings_json.getString("PawnPath", "");
+            if (vehicle_setting->pawn_path.empty())
+            {
+                vehicle_setting->pawn_path = settings_json.getString("PawnName", "");
+            }
             vehicle_setting->default_vehicle_state = settings_json.getString("DefaultVehicleState", "");
             vehicle_setting->allow_api_always = settings_json.getBool("AllowAPIAlways",
                                                                       vehicle_setting->allow_api_always);
@@ -842,6 +867,7 @@ namespace airlib
                                                                        vehicle_setting->enable_collisions);
             vehicle_setting->is_fpv_vehicle = settings_json.getBool("IsFpvVehicle",
                                                                     vehicle_setting->is_fpv_vehicle);
+            vehicle_setting->vehicle_params_path = vehicle_params_path;
 
             loadRCSetting(simmode_name, settings_json, vehicle_setting->rc);
 
@@ -890,12 +916,20 @@ namespace airlib
             }
         }
 
+
         static void loadVehicleSettings(const std::string& simmode_name, const Settings& settings_json,
                                         std::map<std::string, std::unique_ptr<VehicleSetting>>& vehicles,
                                         std::map<std::string, std::shared_ptr<SensorSetting>>& sensor_defaults,
                                         const CameraSetting& camera_defaults)
         {
             createDefaultVehicle(simmode_name, vehicles, sensor_defaults);
+
+            // remove default if we have dir's
+            std::string custom_vehicles_path = settings_json.getString("ExternalVehiclesFolder", "");
+            if (!custom_vehicles_path.empty()) {
+                vehicles.clear();
+            }
+
 
             msr::airlib::Settings vehicles_child;
             if (settings_json.getChild("Vehicles", vehicles_child)) {
@@ -910,6 +944,44 @@ namespace airlib
                     msr::airlib::Settings child;
                     vehicles_child.getChild(key, child);
                     vehicles[key] = createVehicleSetting(simmode_name, child, key, sensor_defaults, camera_defaults);
+                }               
+            }
+
+            // get vehicles from outer files
+            if (!custom_vehicles_path.empty()) {
+                FString pr_plugins_dir = FPaths::ProjectPluginsDir();
+                FString rel_airsim_dir_path = TEXT("AirSim");
+                FString params_dir_path = FPaths::Combine(pr_plugins_dir, rel_airsim_dir_path);
+                params_dir_path = FPaths::Combine(params_dir_path, FString(custom_vehicles_path.c_str()));
+                std::string params_dir_path_str = std::string(TCHAR_TO_UTF8(*params_dir_path));
+
+                if (FPaths::DirectoryExists(params_dir_path)) {
+                     for (const auto& entry : std::experimental::filesystem::directory_iterator(params_dir_path_str)) {
+                        if (std::experimental::filesystem::is_directory(entry)) {
+                            std::string drone_dir_name = entry.path().filename().u8string().c_str();
+                            FString veh_directory_path = FString(UTF8_TO_TCHAR(entry.path().u8string().c_str()));
+                            veh_directory_path.ReplaceInline(TEXT("\\"), TEXT("/"));
+                            FString rel_mulitotorUE_dir_path = TEXT("MultirotorUEParams.json");
+                            FString vehicle_ue_settings_path = FPaths::Combine(veh_directory_path, rel_mulitotorUE_dir_path);
+                            std::string vehicle_ue_settings_path_str = std::string(TCHAR_TO_UTF8(*vehicle_ue_settings_path));
+
+                            // UE_LOG(LogTemp, Warning, TEXT("vehicle ue settings: %s"), *vehicle_ue_settings_path); 
+
+                            Settings vehicle_settings;
+                            vehicle_settings = vehicle_settings.loadJSonFileNonSingleton(vehicle_ue_settings_path_str);
+
+                            std::string tmp_str = vehicle_settings.getString("PawnName", "");
+                            
+                            //TODO: ОШИБКА invalid map<K, T> key ---- из-за неверного названия BP
+                            vehicles[drone_dir_name] = createVehicleSetting(simmode_name, 
+                                                                            vehicle_settings, 
+                                                                            drone_dir_name, 
+                                                                            sensor_defaults, 
+                                                                            camera_defaults,
+                                                                            std::string(TCHAR_TO_UTF8(*veh_directory_path)));
+
+                        }
+                    }
                 }
             }
         }
@@ -925,6 +997,8 @@ namespace airlib
                                PawnPath("Class'/AirSim/Blueprints/BP_FlyingPawn.BP_FlyingPawn_C'"));
             pawn_paths.emplace("DefaultComputerVision",
                                PawnPath("Class'/AirSim/Blueprints/BP_ComputerVisionPawn.BP_ComputerVisionPawn_C'"));
+           // pawn_paths.emplace("Geoscan_BP_FlyingPawn_DEFAULT",
+            //                   PawnPath("Class'/AirSim/CustomPawns/BP_FlyingPawn.BP_FlyingPawn_C'"));
         }
 
         static void loadPawnPaths(const Settings& settings_json, std::map<std::string, PawnPath>& pawn_paths)
@@ -941,6 +1015,39 @@ namespace airlib
                     pawn_paths_child.getChild(key, child);
                     pawn_paths[key] = createPathPawn(child);
                 }
+            }
+
+            std::string custom_pawnpaths_path = settings_json.getString("PawnPathFolder", "");
+            if (!custom_pawnpaths_path.empty()) {
+                FString pr_plugins_dir = FPaths::ProjectPluginsDir();
+                FString rel_pawn_dir_path = TEXT("AirSim/Content");
+                FString params_file_path = FPaths::Combine(pr_plugins_dir, rel_pawn_dir_path);
+                params_file_path = FPaths::Combine(params_file_path, FString(custom_pawnpaths_path.c_str()));
+
+                IFileManager& FileManager = IFileManager::Get();
+
+                TArray<FString> found_files;
+                FString ext = TEXT("*.uasset");
+                FileManager.FindFiles(found_files, *params_file_path, *ext);
+
+                for (const FString& file_path : found_files) {
+
+                    FString file_name = FPaths::GetBaseFilename(file_path);
+                    FString pawn_path = FString::Printf(TEXT("Class'/AirSim/%s/%s.%s_C'"), *FString(custom_pawnpaths_path.c_str()), *file_name, *file_name);
+
+
+                    auto path = PawnPath();
+                    path.pawn_bp = std::string(TCHAR_TO_UTF8(*pawn_path));
+
+
+                    pawn_paths[std::string(TCHAR_TO_UTF8(*file_name))] = path;
+
+                    UE_LOG(LogTemp, Warning, TEXT("pawn[n]: %s"), *FString(pawn_paths[std::string(TCHAR_TO_UTF8(*file_name))].pawn_bp.c_str())); 
+
+                    UE_LOG(LogTemp, Warning, TEXT("pawn name: %s"), *file_name); 
+
+                }                               
+
             }
         }
 
@@ -1317,6 +1424,7 @@ namespace airlib
             sensor_setting->settings = settings_json;
         }
 
+
         // creates and intializes sensor settings from json
         static void loadSensorSettings(const Settings& settings_json, const std::string& collectionName,
                                        std::map<std::string, std::shared_ptr<SensorSetting>>& sensors,
@@ -1354,6 +1462,7 @@ namespace airlib
                     sensors[p.first] = p.second;
             }
         }
+
 
         // creates default sensor list when none specified in json
         static void createDefaultSensorSettings(const std::string& simmode_name,

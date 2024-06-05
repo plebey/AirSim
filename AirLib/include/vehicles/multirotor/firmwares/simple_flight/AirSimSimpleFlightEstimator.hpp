@@ -18,6 +18,17 @@ namespace airlib
     class AirSimSimpleFlightEstimator : public simple_flight::IStateEstimator
     {
     public:
+        AirSimSimpleFlightEstimator()
+        {
+        }
+
+        AirSimSimpleFlightEstimator(const SensorCollection* sensors)
+            : sensors_(sensors)
+        {
+            //TODO: realize data acquisition from sensors
+            unused(sensors);
+        }
+
         virtual ~AirSimSimpleFlightEstimator() {}
 
         //for now we don't do any state estimation and use ground truth (i.e. assume perfect sensors)
@@ -100,6 +111,7 @@ namespace airlib
     private:
         const Kinematics::State* kinematics_;
         const Environment* environment_;
+        const SensorCollection* sensors_;
     };
 }
 } //namespace

@@ -1,0 +1,12 @@
+{
+  "C_T" : 0.109919,
+  "C_P" : 0.040164,
+  "air_density" : 1.225,
+  "max_rpm" : 6396.667,
+  "propeller_diameter" : 0.2286,
+  "propeller_height" : 0.01,
+  "control_signal_filter_tc" : 0.005,
+  "max_thrust" : 4.179446268,
+  "max_torque" : 0.055562,
+  "rotor_z": 2.5
+}

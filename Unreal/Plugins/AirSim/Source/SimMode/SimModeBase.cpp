@@ -541,6 +541,7 @@ void ASimModeBase::startApiServer()
         api_server_.reset();
 #else
         api_server_ = createApiServer();
+        //UAirBlueprintLib::LogMessage(TEXT("CREATE API SERVER "), TEXT(""), LogDebugLevel::Failure, 30);
 #endif
 
         try {
